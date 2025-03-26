@@ -22,8 +22,8 @@ require("lazy").setup({
   {
     "CopilotC-Nvim/CopilotChat.nvim",
     dependencies = {
-      "github/copilot.vim",
-      "nvim-lua/plenary.nvim",
+      { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
+      { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
     },
     opts = {
       show_help = "yes",
@@ -109,105 +109,87 @@ require("lazy").setup({
     end,
   },
 
-  -- null-ls (Prettier, ESLintなど)
+  -- null-ls
   {
-    "jose-elias-alvarez/null-ls.nvim",
+    "nvimtools/none-ls.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
     config = function()
       local null_ls = require("null-ls")
       null_ls.setup({
         sources = {
           null_ls.builtins.formatting.prettierd,
-          null_ls.builtins.diagnostics.eslint_d,
-          null_ls.builtins.code_actions.eslint_d,
         },
         on_attach = function(client, bufnr)
-          if client.supports_method("textDocument/formatting") then
-            vim.api.nvim_clear_autocmds({ group = "LspFormatting", buffer = bufnr })
+          if client and client.supports_method and client.supports_method("textDocument/formatting") then
+            local augroup = vim.api.nvim_create_augroup("LspFormatting", { clear = true })
+            vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
             vim.api.nvim_create_autocmd("BufWritePre", {
-              group = vim.api.nvim_create_augroup("LspFormatting", { clear = true }),
+              group = augroup,
               buffer = bufnr,
               callback = function()
                 vim.lsp.buf.format({ bufnr = bufnr })
               end,
             })
           end
-        end,
+        end
+        
       })
     end,
   },
 
-  -- mason-null-ls
+  -- ファイラー
   {
-    "jay-babu/mason-null-ls.nvim",
+    "nvim-tree/nvim-tree.lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("nvim-tree").setup()
+    end,
+  },
+
+  -- ステータスライン
+  {
+    "nvim-lualine/lualine.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("lualine").setup()
+    end,
+  },
+
+  -- バッファライン（タブUI）
+  {
+    "akinsho/bufferline.nvim",
+    version = "*",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("bufferline").setup()
+    end,
+  },
+
+  -- インデントガイド
+  {
+    "lukas-reineke/indent-blankline.nvim",
+    main = "ibl",
+    opts = {},
+  },
+
+  -- メッセージ・通知UI改善
+  {
+    "folke/noice.nvim",
     dependencies = {
-      "williamboman/mason.nvim",
-      "jose-elias-alvarez/null-ls.nvim",
+      "MunifTanjim/nui.nvim",
+      "rcarriga/nvim-notify"
     },
     config = function()
-      require("mason-null-ls").setup({
-        ensure_installed = {
-          "prettierd",
-          "eslint_d",
-        },
-        automatic_installation = true,
-      })
+      require("noice").setup()
     end,
   },
-  -- ファイラー
-	{
-	  "nvim-tree/nvim-tree.lua",
-	  dependencies = { "nvim-tree/nvim-web-devicons" },
-	  config = function()
-	    require("nvim-tree").setup()
-	  end,
-	},
 
-	-- ステータスライン
-	{
-	  "nvim-lualine/lualine.nvim",
-	  dependencies = { "nvim-tree/nvim-web-devicons" },
-	  config = function()
-	    require("lualine").setup()
-	  end,
-	},
-
-	-- バッファライン（タブUI）
-	{
-	  "akinsho/bufferline.nvim",
-	  version = "*",
-	  dependencies = { "nvim-tree/nvim-web-devicons" },
-	  config = function()
-	    require("bufferline").setup()
-	  end,
-	},
-
-	-- インデントガイド
-	{
-	  "lukas-reineke/indent-blankline.nvim",
-	  main = "ibl",
-	  opts = {},
-	},
-
-	-- メッセージ・通知UI改善
-	{
-	  "folke/noice.nvim",
-	  dependencies = {
-	    "MunifTanjim/nui.nvim",
-	    "rcarriga/nvim-notify"
-	  },
-	  config = function()
-	    require("noice").setup()
-	  end,
-	},
-
-	-- ファジーファインダー
-	{
-	  "nvim-telescope/telescope.nvim",
-	  dependencies = { "nvim-lua/plenary.nvim" },
-	  config = function()
-	    require("telescope").setup()
-	  end,
-	},
+  -- ファジーファインダー
+  {
+    "nvim-telescope/telescope.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      require("telescope").setup()
+    end,
+  },
 })
-
