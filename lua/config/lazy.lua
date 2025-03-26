@@ -1,5 +1,3 @@
--- lua/config/lazy.lua
-
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -7,16 +5,17 @@ if not vim.loop.fs_stat(lazypath) then
     "clone",
     "--filter=blob:none",
     "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", -- latest stable release
+    "--branch=stable",
     lazypath,
   })
 end
 vim.opt.rtp:prepend(lazypath)
+
 require("lazy").setup({
   -- GitHub Copilot
   {
     "github/copilot.vim",
-    lazy = false,  -- 起動時にロード
+    lazy = false,
   },
 
   -- Copilot Chat
@@ -27,9 +26,188 @@ require("lazy").setup({
       "nvim-lua/plenary.nvim",
     },
     opts = {
-      show_help = "yes",  -- お好みで
+      show_help = "yes",
     },
-    cmd = { "CopilotChat", "CopilotChatOpen", "CopilotChatExplain" }, -- 遅延読み込み用
+    cmd = { "CopilotChat", "CopilotChatOpen", "CopilotChatExplain" },
   },
+
+  -- mason.nvim (LSP/DAP/Formatter installer)
+  {
+    "williamboman/mason.nvim",
+    build = ":MasonUpdate",
+    config = true,
+  },
+
+  -- mason-lspconfig (Mason ↔ LSP bridge)
+  {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        ensure_installed = {
+          "lua_ls",
+          "ts_ls",
+          "pyright",
+          "html",
+          "cssls",
+        },
+        automatic_installation = true,
+      })
+    end,
+  },
+
+  -- nvim-lspconfig
+  {
+    "neovim/nvim-lspconfig",
+    dependencies = { "hrsh7th/cmp-nvim-lsp" },
+    config = function()
+      local lspconfig = require("lspconfig")
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      local servers = {
+        "lua_ls",
+        "ts_ls",
+        "pyright",
+        "html",
+        "cssls",
+      }
+      for _, server in ipairs(servers) do
+        lspconfig[server].setup({
+          capabilities = capabilities,
+        })
+      end
+    end,
+  },
+
+  -- nvim-cmp (補完エンジン)
+  {
+    "hrsh7th/nvim-cmp",
+    event = "InsertEnter",
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp",
+      "saadparwaiz1/cmp_luasnip",
+      "L3MON4D3/LuaSnip",
+    },
+    config = function()
+      local cmp = require("cmp")
+      local luasnip = require("luasnip")
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
+        },
+        mapping = cmp.mapping.preset.insert({
+          ["<Tab>"] = cmp.mapping.select_next_item(),
+          ["<S-Tab>"] = cmp.mapping.select_prev_item(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }),
+        }),
+        sources = {
+          { name = "nvim_lsp" },
+          { name = "luasnip" },
+        },
+      })
+    end,
+  },
+
+  -- null-ls (Prettier, ESLintなど)
+  {
+    "jose-elias-alvarez/null-ls.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      local null_ls = require("null-ls")
+      null_ls.setup({
+        sources = {
+          null_ls.builtins.formatting.prettierd,
+          null_ls.builtins.diagnostics.eslint_d,
+          null_ls.builtins.code_actions.eslint_d,
+        },
+        on_attach = function(client, bufnr)
+          if client.supports_method("textDocument/formatting") then
+            vim.api.nvim_clear_autocmds({ group = "LspFormatting", buffer = bufnr })
+            vim.api.nvim_create_autocmd("BufWritePre", {
+              group = vim.api.nvim_create_augroup("LspFormatting", { clear = true }),
+              buffer = bufnr,
+              callback = function()
+                vim.lsp.buf.format({ bufnr = bufnr })
+              end,
+            })
+          end
+        end,
+      })
+    end,
+  },
+
+  -- mason-null-ls
+  {
+    "jay-babu/mason-null-ls.nvim",
+    dependencies = {
+      "williamboman/mason.nvim",
+      "jose-elias-alvarez/null-ls.nvim",
+    },
+    config = function()
+      require("mason-null-ls").setup({
+        ensure_installed = {
+          "prettierd",
+          "eslint_d",
+        },
+        automatic_installation = true,
+      })
+    end,
+  },
+  -- ファイラー
+	{
+	  "nvim-tree/nvim-tree.lua",
+	  dependencies = { "nvim-tree/nvim-web-devicons" },
+	  config = function()
+	    require("nvim-tree").setup()
+	  end,
+	},
+
+	-- ステータスライン
+	{
+	  "nvim-lualine/lualine.nvim",
+	  dependencies = { "nvim-tree/nvim-web-devicons" },
+	  config = function()
+	    require("lualine").setup()
+	  end,
+	},
+
+	-- バッファライン（タブUI）
+	{
+	  "akinsho/bufferline.nvim",
+	  version = "*",
+	  dependencies = { "nvim-tree/nvim-web-devicons" },
+	  config = function()
+	    require("bufferline").setup()
+	  end,
+	},
+
+	-- インデントガイド
+	{
+	  "lukas-reineke/indent-blankline.nvim",
+	  main = "ibl",
+	  opts = {},
+	},
+
+	-- メッセージ・通知UI改善
+	{
+	  "folke/noice.nvim",
+	  dependencies = {
+	    "MunifTanjim/nui.nvim",
+	    "rcarriga/nvim-notify"
+	  },
+	  config = function()
+	    require("noice").setup()
+	  end,
+	},
+
+	-- ファジーファインダー
+	{
+	  "nvim-telescope/telescope.nvim",
+	  dependencies = { "nvim-lua/plenary.nvim" },
+	  config = function()
+	    require("telescope").setup()
+	  end,
+	},
 })
 

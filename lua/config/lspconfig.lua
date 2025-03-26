@@ -1,12 +1,13 @@
 require("mason-lspconfig").setup_handlers({
-  -- ...configs for other LSP
+  -- ... configs for other LSP
 
-  ["tsserver"] = function()
-    -- ↓先述
-    local vue_typescript_plugin = require("mason-registry").get_package("vue-language-server"):get_install_path()
-      .. "/node_modules/@vue/language-server/node_modules/@vue/typescript-plugin"
+  ["ts_ls"] = function()
+    local vue_typescript_plugin = require("mason-registry")
+      .get_package("vue-language-server")
+      :get_install_path()
+      .. "/node_modules/@vue/typescript-plugin"
 
-    lspconfig["tsserver"].setup({
+    require("lspconfig")["ts_ls"].setup({
       init_options = {
         plugins = {
           {
@@ -19,3 +20,4 @@ require("mason-lspconfig").setup_handlers({
     })
   end,
 })
+
