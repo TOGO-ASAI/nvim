@@ -50,6 +50,7 @@ require("lazy").setup({
           "pyright",
           "html",
           "cssls",
+	  "tailwindcss",
         },
         automatic_installation = true,
       })
@@ -69,6 +70,7 @@ require("lazy").setup({
         "pyright",
         "html",
         "cssls",
+	"tailwindcss",
       }
       for _, server in ipairs(servers) do
         lspconfig[server].setup({
@@ -192,4 +194,15 @@ require("lazy").setup({
       require("telescope").setup()
     end,
   },
+  {
+  "NvChad/nvim-colorizer.lua",
+  config = function()
+    require("colorizer").setup({
+      filetypes = { "css", "scss", "html", "javascript", "typescript", "vue" },
+      user_default_options = {
+        tailwind = true,
+      },
+    })
+  end,
+}
 })
